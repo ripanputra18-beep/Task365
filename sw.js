@@ -1,4 +1,4 @@
-const CACHE = "ke-hoach-shell-v1.7-drive";
+const CACHE = "ke-hoach-shell-v1.8-drive";
 const SHELL = ["./", "./styles.css", "./app.js", "./config.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {
