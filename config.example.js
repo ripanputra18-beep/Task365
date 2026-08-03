@@ -5,5 +5,5 @@ window.KE_HOACH_CONFIG = {
   googleClientId: "THAY_BANG_CLIENT_ID_THAT.apps.googleusercontent.com",
   // Có thể để trống nếu chưa có trang tải/cập nhật.
   updateUrl: "https://example.com/ke-hoach-cong-viec",
-  version: "PWA 1.6"
+  version: "PWA 1.7"
 };
