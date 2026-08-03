@@ -87,7 +87,7 @@ Trong `config.js`:
 window.KE_HOACH_CONFIG = {
   googleClientId: "CLIENT_ID_THAT.apps.googleusercontent.com",
   updateUrl: "https://dia-chi-trang-cap-nhat.example",
-  version: "PWA 1.9"
+  version: "PWA 1.10"
 };
 ```
 

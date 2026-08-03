@@ -197,6 +197,7 @@ function renderCalendar(tasks) {
       $("#selectedDate").value = dateValue;
       resetForm();
       render();
+      if ($("#calendarDialog").open) $("#calendarDialog").close();
     });
     grid.append(button);
   }
@@ -642,6 +643,12 @@ async function start() {
   $("#nextDay").addEventListener("click", () => moveDate(1));
   $("#previousMonth").addEventListener("click", () => moveMonth(-1));
   $("#nextMonth").addEventListener("click", () => moveMonth(1));
+  $("#openCalendar").addEventListener("click", async () => {
+    setCalendarFromSelected();
+    await render();
+    $("#calendarDialog").showModal();
+  });
+  $("#closeCalendar").addEventListener("click", () => $("#calendarDialog").close());
   $("#todayButton").addEventListener("click", () => {
     $("#selectedDate").value = today(); setCalendarFromSelected(); render();
   });

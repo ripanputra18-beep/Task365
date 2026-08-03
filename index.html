@@ -45,29 +45,36 @@
         <span>Ngày đang xem</span>
         <input id="selectedDate" type="date">
       </label>
+      <button id="openCalendar" class="quiet" type="button" aria-label="Mở lịch tháng">Lịch</button>
       <button id="todayButton" class="quiet" type="button">Hôm nay</button>
       <button id="nextDay" class="square" type="button" aria-label="Ngày sau">›</button>
     </section>
 
-    <section class="month-calendar card" aria-label="Lịch kế hoạch theo tháng">
-      <div class="calendar-head">
-        <button id="previousMonth" class="square" type="button" aria-label="Tháng trước">‹</button>
-        <div>
-          <p class="eyebrow">Lịch kế hoạch</p>
-          <h2 id="calendarTitle">Tháng này</h2>
+    <dialog id="calendarDialog" class="calendar-dialog">
+      <div class="calendar-modal-bar">
+        <strong>Chọn ngày kế hoạch</strong>
+        <button id="closeCalendar" class="square" type="button" aria-label="Đóng lịch">×</button>
+      </div>
+      <section class="month-calendar" aria-label="Lịch kế hoạch theo tháng">
+        <div class="calendar-head">
+          <button id="previousMonth" class="square" type="button" aria-label="Tháng trước">‹</button>
+          <div>
+            <p class="eyebrow">Lịch kế hoạch</p>
+            <h2 id="calendarTitle">Tháng này</h2>
+          </div>
+          <button id="nextMonth" class="square" type="button" aria-label="Tháng sau">›</button>
         </div>
-        <button id="nextMonth" class="square" type="button" aria-label="Tháng sau">›</button>
-      </div>
-      <div class="calendar-legend" aria-label="Chú thích trạng thái">
-        <span><i class="calendar-dot orange"></i>Chưa hoàn thành</span>
-        <span><i class="calendar-dot green"></i>Đã hoàn thành</span>
-        <span><i class="calendar-dot red"></i>Đã bỏ lỡ</span>
-      </div>
-      <div class="calendar-weekdays" aria-hidden="true">
-        <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
-      </div>
-      <div id="calendarGrid" class="calendar-grid"></div>
-    </section>
+        <div class="calendar-legend" aria-label="Chú thích trạng thái">
+          <span><i class="calendar-dot orange"></i>Chưa hoàn thành</span>
+          <span><i class="calendar-dot green"></i>Đã hoàn thành</span>
+          <span><i class="calendar-dot red"></i>Đã bỏ lỡ</span>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </section>
+    </dialog>
 
     <section class="quick-add card">
       <form id="taskForm">
