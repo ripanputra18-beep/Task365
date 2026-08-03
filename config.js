@@ -5,5 +5,5 @@
 window.KE_HOACH_CONFIG = {
   googleClientId: "545181983735-5r2p4m0ohvcsajlgc403un5q64reicvt.apps.googleusercontent.com",
   updateUrl: "",
-  version: "PWA 1.8"
+  version: "PWA 1.9"
 };

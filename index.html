@@ -49,6 +49,26 @@
       <button id="nextDay" class="square" type="button" aria-label="Ngày sau">›</button>
     </section>
 
+    <section class="month-calendar card" aria-label="Lịch kế hoạch theo tháng">
+      <div class="calendar-head">
+        <button id="previousMonth" class="square" type="button" aria-label="Tháng trước">‹</button>
+        <div>
+          <p class="eyebrow">Lịch kế hoạch</p>
+          <h2 id="calendarTitle">Tháng này</h2>
+        </div>
+        <button id="nextMonth" class="square" type="button" aria-label="Tháng sau">›</button>
+      </div>
+      <div class="calendar-legend" aria-label="Chú thích trạng thái">
+        <span><i class="calendar-dot orange"></i>Chưa hoàn thành</span>
+        <span><i class="calendar-dot green"></i>Đã hoàn thành</span>
+        <span><i class="calendar-dot red"></i>Đã bỏ lỡ</span>
+      </div>
+      <div class="calendar-weekdays" aria-hidden="true">
+        <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+      </div>
+      <div id="calendarGrid" class="calendar-grid"></div>
+    </section>
+
     <section class="quick-add card">
       <form id="taskForm">
         <input id="taskSyncId" type="hidden">
@@ -135,6 +155,33 @@
     <p id="dialogMessage" class="message" role="status"></p>
   </dialog>
 
+  <dialog id="reminderDialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Chuông nhắc việc</p>
+        <h2 id="reminderTaskTitle">Thêm vào lịch điện thoại</h2>
+      </div>
+      <button id="closeReminderDialog" class="square" type="button" aria-label="Đóng">×</button>
+    </div>
+    <form id="reminderForm" class="reminder-form">
+      <p id="reminderTaskTime" class="muted"></p>
+      <label class="field">
+        <span>Nhắc trước</span>
+        <select id="reminderMinutes">
+          <option value="5">5 phút</option>
+          <option value="15">15 phút</option>
+          <option value="30">30 phút</option>
+          <option value="60">1 giờ</option>
+        </select>
+      </label>
+      <p class="muted">Điện thoại sẽ mở tệp lịch để bạn xác nhận thêm sự kiện. Sau đó lịch của điện thoại sẽ báo ngay cả khi Task365 đã đóng.</p>
+      <div class="reminder-actions">
+        <button id="cancelReminder" class="quiet" type="button">Hủy</button>
+        <button class="primary" type="submit">Thêm lịch nhắc</button>
+      </div>
+    </form>
+  </dialog>
+
   <template id="taskTemplate">
     <article class="task">
       <button class="check" type="button" aria-label="Đánh dấu hoàn thành"><span>✓</span></button>
@@ -146,6 +193,7 @@
         <div class="task-meta"><span class="time"></span><span class="estimate"></span></div>
       </div>
       <div class="task-actions">
+        <button class="remind square" type="button" aria-label="Thêm lịch nhắc">🔔</button>
         <button class="edit square" type="button" aria-label="Sửa công việc">✎</button>
         <button class="remove square" type="button" aria-label="Xóa công việc">×</button>
       </div>

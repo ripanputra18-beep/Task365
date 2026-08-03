@@ -18,6 +18,8 @@ let tokenClient;
 let syncTimer;
 let syncInProgress = false;
 let syncQueued = false;
+let calendarCursor;
+let reminderTask;
 
 function today() {
   const date = new Date();
@@ -97,8 +99,9 @@ function defaultTask(values) {
 
 async function render() {
   const selected = $("#selectedDate").value;
-  const tasks = (await allTasks())
-    .filter(task => !task.deleted_at && task.due_date === selected)
+  const activeTasks = (await allTasks()).filter(task => !task.deleted_at);
+  const tasks = activeTasks
+    .filter(task => task.due_date === selected)
     .sort((a, b) => (a.sort_order - b.sort_order) ||
       (a.due_time || "99:99").localeCompare(b.due_time || "99:99"));
   const list = $("#taskList");
@@ -113,6 +116,7 @@ async function render() {
     node.querySelector(".time").textContent = task.due_time ? `◷ ${task.due_time}` : "Cả ngày";
     node.querySelector(".estimate").textContent = `Dự kiến ${task.estimated_minutes || 0} phút`;
     node.querySelector(".check").addEventListener("click", () => toggleDone(task));
+    node.querySelector(".remind").addEventListener("click", () => openReminder(task));
     node.querySelector(".edit").addEventListener("click", () => editTask(task));
     node.querySelector(".remove").addEventListener("click", () => removeTask(task));
     list.append(node);
@@ -129,6 +133,182 @@ async function render() {
   const date = new Date(`${selected}T12:00:00`);
   $("#dateCaption").textContent = selected === today() ? "Hôm nay" :
     new Intl.DateTimeFormat("vi-VN", {weekday: "long", day: "2-digit", month: "2-digit"}).format(date);
+  renderCalendar(activeTasks);
+}
+
+function dateToISO(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function setCalendarFromSelected() {
+  const selected = $("#selectedDate").value || today();
+  calendarCursor = new Date(`${selected.slice(0, 7)}-01T12:00:00`);
+}
+
+function calendarState(dateValue, tasks) {
+  const dayTasks = tasks.filter(task => task.due_date === dateValue);
+  if (!dayTasks.length) return {name: "", label: "Không có kế hoạch", count: 0};
+  const unfinished = dayTasks.some(task => task.status !== "done");
+  if (!unfinished) return {name: "green", label: "Đã hoàn thành", count: dayTasks.length};
+  if (dateValue < today()) return {name: "red", label: "Đã bỏ lỡ", count: dayTasks.length};
+  return {name: "orange", label: "Chưa hoàn thành", count: dayTasks.length};
+}
+
+function renderCalendar(tasks) {
+  if (!calendarCursor) setCalendarFromSelected();
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  const selected = $("#selectedDate").value;
+  const grid = $("#calendarGrid");
+  grid.replaceChildren();
+  $("#calendarTitle").textContent = new Intl.DateTimeFormat("vi-VN", {
+    month: "long", year: "numeric"
+  }).format(calendarCursor);
+
+  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+  for (let index = 0; index < firstWeekday; index += 1) {
+    const blank = document.createElement("span");
+    blank.className = "calendar-blank";
+    grid.append(blank);
+  }
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dateValue = dateToISO(new Date(year, month, day, 12));
+    const state = calendarState(dateValue, tasks);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "calendar-day";
+    if (dateValue === selected) button.classList.add("selected");
+    if (dateValue === today()) button.classList.add("today");
+    if (state.name) button.classList.add(`has-${state.name}`);
+    button.setAttribute("aria-label", `${day}/${month + 1}/${year}: ${state.label}${state.count ? `, ${state.count} việc` : ""}`);
+
+    const number = document.createElement("span");
+    number.textContent = String(day);
+    button.append(number);
+    if (state.name) {
+      const dot = document.createElement("i");
+      dot.className = `calendar-dot ${state.name}`;
+      button.append(dot);
+    }
+    button.addEventListener("click", () => {
+      $("#selectedDate").value = dateValue;
+      resetForm();
+      render();
+    });
+    grid.append(button);
+  }
+}
+
+function moveMonth(offset) {
+  if (!calendarCursor) setCalendarFromSelected();
+  calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + offset, 1, 12);
+  render();
+}
+
+function formatReminderDate(task) {
+  const date = new Date(`${task.due_date}T${task.due_time || "09:00"}:00`);
+  return new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  }).format(date);
+}
+
+function openReminder(task) {
+  if (!task.due_time) {
+    notify("Hãy sửa công việc và nhập giờ trước khi bật chuông");
+    editTask(task);
+    return;
+  }
+  reminderTask = task;
+  $("#reminderTaskTitle").textContent = task.title;
+  $("#reminderTaskTime").textContent = formatReminderDate(task);
+  const allowed = [5, 15, 30, 60];
+  $("#reminderMinutes").value = String(allowed.includes(Number(task.reminder_minutes)) ? task.reminder_minutes : 15);
+  $("#reminderDialog").showModal();
+}
+
+function icsEscape(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function localIcsDateTime(date) {
+  const pad = value => String(value).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+}
+
+async function createCalendarReminder(task, reminderMinutes) {
+  const start = new Date(`${task.due_date}T${task.due_time}:00`);
+  const end = new Date(start.getTime() + Math.max(1, Number(task.estimated_minutes || 30)) * 60000);
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const content = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Task365//Ke Hoach Cong Viec//VI",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${icsEscape(task.sync_id)}@task365`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${localIcsDateTime(start)}`,
+    `DTEND:${localIcsDateTime(end)}`,
+    `SUMMARY:${icsEscape(task.title)}`,
+    `DESCRIPTION:${icsEscape(task.details || "Công việc từ Task365")}`,
+    "BEGIN:VALARM",
+    `TRIGGER:-PT${reminderMinutes}M`,
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${icsEscape(`Nhắc việc: ${task.title}`)}`,
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+    ""
+  ].join("\r\n");
+  const fileName = `Task365-${task.due_date}-${task.title}`
+    .replace(/[^a-zA-Z0-9À-ỹ._-]+/g, "-").slice(0, 90) + ".ics";
+  const blob = new Blob([content], {type: "text/calendar;charset=utf-8"});
+  const file = new File([blob], fileName, {type: "text/calendar"});
+
+  if (navigator.share && navigator.canShare?.({files: [file]})) {
+    try {
+      await navigator.share({title: task.title, text: "Thêm lịch nhắc từ Task365", files: [file]});
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+      // Trình duyệt chặn bảng chia sẻ thì chuyển sang tải tệp .ics.
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+async function submitReminder(event) {
+  event.preventDefault();
+  if (!reminderTask) return;
+  const reminderMinutes = Number($("#reminderMinutes").value || 15);
+  const updated = {...reminderTask, reminder_minutes: reminderMinutes, updated_at: isoNow()};
+  await saveTask(updated);
+  reminderTask = updated;
+  scheduleSync();
+  try {
+    await createCalendarReminder(updated, reminderMinutes);
+    $("#reminderDialog").close();
+    notify("Đã tạo tệp lịch nhắc");
+  } catch (error) {
+    if (error?.name !== "AbortError") notify(`Không tạo được lịch nhắc: ${error.message}`);
+  }
+  await render();
 }
 
 async function toggleDone(task) {
@@ -438,6 +618,7 @@ function moveDate(offset) {
   value.setDate(value.getDate() + offset);
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
   $("#selectedDate").value = local.toISOString().slice(0, 10);
+  setCalendarFromSelected();
   render();
 }
 
@@ -454,14 +635,24 @@ function loadConfig() {
 async function start() {
   db = await openDatabase();
   $("#selectedDate").value = today();
+  setCalendarFromSelected();
   $("#taskForm").addEventListener("submit", submitTask);
   $("#cancelEdit").addEventListener("click", resetForm);
   $("#previousDay").addEventListener("click", () => moveDate(-1));
   $("#nextDay").addEventListener("click", () => moveDate(1));
+  $("#previousMonth").addEventListener("click", () => moveMonth(-1));
+  $("#nextMonth").addEventListener("click", () => moveMonth(1));
   $("#todayButton").addEventListener("click", () => {
-    $("#selectedDate").value = today(); render();
+    $("#selectedDate").value = today(); setCalendarFromSelected(); render();
   });
-  $("#selectedDate").addEventListener("change", render);
+  $("#selectedDate").addEventListener("change", () => {
+    setCalendarFromSelected();
+    resetForm();
+    render();
+  });
+  $("#reminderForm").addEventListener("submit", submitReminder);
+  $("#closeReminderDialog").addEventListener("click", () => $("#reminderDialog").close());
+  $("#cancelReminder").addEventListener("click", () => $("#reminderDialog").close());
   $("#accountButton").addEventListener("click", () => $("#accountDialog").showModal());
   $("#googleLoginButton").addEventListener("click", signInWithGoogle);
   $("#syncButton").addEventListener("click", sync);
