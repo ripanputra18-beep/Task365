@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="Theo dõi và đồng bộ kế hoạch công việc trên điện thoại và máy tính.">
+  <title>Kế Hoạch Công Việc</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Trang chủ">
+      <span class="brand-mark">K</span>
+      <span><strong>Kế Hoạch</strong><small>Công việc mỗi ngày</small></span>
+    </a>
+    <div class="top-actions">
+      <button id="installButton" class="quiet hidden" type="button">Cài ứng dụng</button>
+      <button id="accountButton" class="account-pill" type="button">
+        <span class="dot local"></span><span id="accountLabel">Chỉ trên máy này</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Kế hoạch trong tầm tay</p>
+        <h1>Hôm nay, làm điều quan trọng.</h1>
+      </div>
+      <div class="score">
+        <strong id="scoreValue">0%</strong>
+        <span>hoàn thành</span>
+      </div>
+    </section>
+
+    <div class="progress" aria-label="Tỷ lệ hoàn thành">
+      <span id="progressDone"></span><span id="progressDoing"></span><span id="progressTodo"></span>
+    </div>
+
+    <section class="toolbar card">
+      <button id="previousDay" class="square" type="button" aria-label="Ngày trước">‹</button>
+      <label class="date-picker">
+        <span>Ngày đang xem</span>
+        <input id="selectedDate" type="date">
+      </label>
+      <button id="todayButton" class="quiet" type="button">Hôm nay</button>
+      <button id="nextDay" class="square" type="button" aria-label="Ngày sau">›</button>
+    </section>
+
+    <section class="quick-add card">
+      <form id="taskForm">
+        <input id="taskSyncId" type="hidden">
+        <label class="field grow">
+          <span>Tên công việc</span>
+          <input id="taskTitle" maxlength="1000" placeholder="Ví dụ: Viết bài cho kênh tin tức" required>
+        </label>
+        <label class="field">
+          <span>Giờ</span>
+          <input id="taskTime" type="time">
+        </label>
+        <label class="field">
+          <span>Trạng thái</span>
+          <select id="taskStatus">
+            <option value="todo">Chưa làm</option>
+            <option value="doing">Đang làm</option>
+            <option value="done">Hoàn thành</option>
+          </select>
+        </label>
+        <label class="field details-field">
+          <span>Ghi chú</span>
+          <input id="taskDetails" maxlength="20000" placeholder="Nội dung hoặc đường link cần nhớ">
+        </label>
+        <label class="field minutes-field">
+          <span>Dự kiến</span>
+          <span class="input-suffix"><input id="taskMinutes" type="number" min="0" max="10080" value="30"><i>phút</i></span>
+        </label>
+        <div class="form-actions">
+          <button id="cancelEdit" class="quiet hidden" type="button">Hủy sửa</button>
+          <button class="primary" type="submit"><span id="submitLabel">Thêm việc</span></button>
+        </div>
+      </form>
+    </section>
+
+    <section class="task-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow" id="dateCaption">Hôm nay</p>
+          <h2>Danh sách công việc</h2>
+        </div>
+        <div class="sync-actions">
+          <button id="syncButton" class="quiet hidden" type="button">Đồng bộ</button>
+          <span id="taskCount">0 việc</span>
+        </div>
+      </div>
+      <div id="taskList" class="task-list"></div>
+      <div id="emptyState" class="empty">
+        <span>✓</span>
+        <h3>Ngày này chưa có công việc</h3>
+        <p>Thêm một việc nhỏ ở phía trên để bắt đầu.</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="accountDialog">
+    <form method="dialog" class="dialog-head">
+      <div>
+        <p class="eyebrow">Dữ liệu của bạn</p>
+        <h2>Đồng bộ nhiều thiết bị</h2>
+      </div>
+      <button class="square" value="cancel" aria-label="Đóng">×</button>
+    </form>
+    <div id="signedOutPanel">
+      <p class="muted">Không đăng nhập: dữ liệu chỉ nằm trong trình duyệt trên thiết bị này. Đăng nhập Google để lưu bản đồng bộ trong vùng dữ liệu ẩn của Google Drive cá nhân.</p>
+      <button id="googleLoginButton" class="google-button" type="button">
+        <span class="google-mark" aria-hidden="true">G</span>
+        <span>Đăng nhập với Google</span>
+      </button>
+      <p id="googleConfigHelp" class="config-help hidden">Chủ ứng dụng chưa cấu hình Google Client ID. Xem README đi kèm bản PWA.</p>
+    </div>
+    <div id="signedInPanel" class="hidden">
+      <div class="signed-in">
+        <span class="avatar">G</span>
+        <div><small>Đang đồng bộ bằng</small><strong id="signedInEmail"></strong></div>
+      </div>
+      <p class="muted">Công việc được hợp nhất với tệp <code>ke-hoach-cong-viec-sync.json</code> trong vùng ẩn của Google Drive.</p>
+      <button id="logoutButton" class="danger" type="button">Đăng xuất trên thiết bị này</button>
+    </div>
+    <div class="update-box">
+      <div><strong>Cập nhật ứng dụng</strong><small id="versionLabel">Phiên bản web</small></div>
+      <a id="updateLink" class="quiet button-link hidden" target="_blank" rel="noopener">Mở trang cập nhật</a>
+      <span id="noUpdateLink" class="muted">Chưa cấu hình đường dẫn</span>
+    </div>
+    <p id="dialogMessage" class="message" role="status"></p>
+  </dialog>
+
+  <template id="taskTemplate">
+    <article class="task">
+      <button class="check" type="button" aria-label="Đánh dấu hoàn thành"><span>✓</span></button>
+      <div class="task-main">
+        <div class="task-title-row">
+          <h3></h3><span class="status"></span>
+        </div>
+        <p class="task-details"></p>
+        <div class="task-meta"><span class="time"></span><span class="estimate"></span></div>
+      </div>
+      <div class="task-actions">
+        <button class="edit square" type="button" aria-label="Sửa công việc">✎</button>
+        <button class="remove square" type="button" aria-label="Xóa công việc">×</button>
+      </div>
+    </article>
+  </template>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="./config.js"></script>
+  <script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
